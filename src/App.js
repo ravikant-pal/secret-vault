@@ -1,24 +1,31 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import "./App.css";
+import Auth from "./components/Auth";
+import Home from "./components/Home";
+import * as service from "./service";
 
 function App() {
+  const [secret, setSecret] = useState("");
+
+  const [authenticated, setAuthenticated] = useState(false);
+
+  const addSecret = () => {
+    if (service.getSecret() == null) {
+      service.addSecret(secret);
+      setAuthenticated(true);
+    } else if (service.getSecret() == secret) {
+      setAuthenticated(true);
+    }
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <>
+      {authenticated ? (
+        <Home />
+      ) : (
+        <Auth addSecret={addSecret} secret={secret} setSecret={setSecret} />
+      )}
+    </>
   );
 }
 
