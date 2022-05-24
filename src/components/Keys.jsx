@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import Typography from "@material-ui/core/Typography";
 import List from "@material-ui/core/List";
@@ -14,6 +14,8 @@ import VisibilityRoundedIcon from "@material-ui/icons/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@material-ui/icons/VisibilityOffRounded";
 import Fab from "@material-ui/core/Fab";
 import AddIcon from "@material-ui/icons/Add";
+import axios from "axios";
+import moment from "moment";
 import {
   Divider,
   IconButton,
@@ -26,39 +28,7 @@ import ConfirmDialog from "./ConfirmDialog";
 
 import * as service from "../services/service";
 
-const messages = [
-  {
-    id: 1,
-    keyName: "Brunch this week?",
-    lastModified: "Last modified - Jan 9, 2014",
-    secret: false,
-  },
-
-  {
-    id: 2,
-    keyName: "Brunch this week?",
-    lastModified: "Last modified - Jan 9, 2014",
-    secret: false,
-  },
-  {
-    id: 3,
-    keyName: "Brunch this week?",
-    lastModified: "Last modified - Jan 9, 2014",
-    secret: false,
-  },
-  {
-    id: 4,
-    keyName: "Brunch this week?",
-    lastModified: "Last modified - Jan 9, 2014",
-    secret: true,
-  },
-  {
-    id: 5,
-    keyName: "Brunch this week?",
-    lastModified: "Last modified - Jan 9, 2014",
-    secret: false,
-  },
-];
+import * as Constants from "../constants";
 
 const useStyles = makeStyles((theme) => ({
   subheader: {
@@ -82,33 +52,62 @@ const Keys = ({ setSelectedKeyId }) => {
   const [show, setShow] = useState(false);
   const [showSecretKeys, setShowSecretKeys] = useState(false);
   const [open, setOpen] = useState(false);
-  const [keys, setKeys] = useState(service.getAllKeys());
+  const [keys, setKeys] = useState([]);
   const [key, setKey] = useState("");
   const [errMsg, setErrMsg] = useState("");
   const saveKey = () => {
-    if (!key) {
-      setErrMsg("Field is empty.");
-    } else {
-      setOpen(false);
-      service.addNewKey(key);
-      setKeys(service.getAllKeys());
-      setKey("");
-    }
+    axios
+      .post(`${Constants.BASE_URL}/keys/new`, {
+        userId: service.getUserId(),
+        name: key,
+      })
+      .then((res) => {
+        setOpen(false);
+        setKey("");
+        setKeys([res.data, ...keys]);
+      })
+      .catch((err) => console.error(err));
   };
   const handleKeyChange = (e) => {
     setKey(e.target.value);
     setErrMsg("");
   };
   const handleDeleteKey = (id) => {
-    service.deleteKey(id);
-    setKeys(service.getAllKeys());
+    axios
+      .delete(`${Constants.BASE_URL}/keys/${service.getUserId()}/${id}`)
+
+      .then((res) => {
+        console.log(res);
+        setKeys(keys.filter((k) => k._id !== id));
+      })
+      .catch((err) => console.error(err));
   };
 
   const handleAddKeyAsSecret = (id) => {
-    console.log("id===>", id);
-    service.setKeyAsSecret(id);
-    setKeys(service.getAllKeys());
+    axios
+      .patch(`${Constants.BASE_URL}/keys/make-secret/${id}`)
+      .then((res) => {
+        setKeys(
+          keys.map((k) => {
+            if (k._id === id) {
+              return { ...k, is_secret: true };
+            }
+            return k;
+          })
+        );
+      })
+      .catch((err) => console.error(err));
   };
+
+  useEffect(() => {
+    axios
+      .get(`${Constants.BASE_URL}/keys/all/${service.getUserId()}`)
+      .then((res) => {
+        console.log(res);
+        setKeys(res.data.keys);
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
   return (
     <Paper>
@@ -119,7 +118,7 @@ const Keys = ({ setSelectedKeyId }) => {
         >
           <ListItemText
             disableTypography
-            primary={<Typography variant="h5">Keys</Typography>}
+            primary={<Typography variant="h6">Keys</Typography>}
           />
 
           {show && (
@@ -144,35 +143,37 @@ const Keys = ({ setSelectedKeyId }) => {
       </List>
 
       <List>
-        {keys.map(({ id, keyName, lmd, secret }) => (
-          <React.Fragment key={id}>
-            {id === 1730 && (
+        {keys.map(({ _id, name, updatedAt, is_secret }) => (
+          <React.Fragment key={_id}>
+            {_id === 1730 && (
               <ListSubheader className={classes.subheader}>Today</ListSubheader>
             )}
-            {id === 3 && (
+            {_id === 3 && (
               <ListSubheader className={classes.subheader}>
                 Yesterday
               </ListSubheader>
             )}
-            {(!secret || (secret && showSecretKeys)) && (
-              <ListItem button onClick={() => setSelectedKeyId(id)}>
+            {(!is_secret || (is_secret && showSecretKeys)) && (
+              <ListItem button onClick={() => setSelectedKeyId(_id)}>
                 <ListItemAvatar>
                   <Avatar>
                     <VpnKeyIcon />
                   </Avatar>
                 </ListItemAvatar>
                 <ListItemText
-                  primary={keyName}
-                  secondary={`Last modified - ${lmd}`}
+                  primary={name}
+                  secondary={`Last modified - ${moment(updatedAt).format(
+                    "LLLL"
+                  )}`}
                 />
 
                 <ListItemSecondaryAction>
-                  {!secret && (
+                  {!is_secret && (
                     <Tooltip title="Make secret key" placement="left" arrow>
                       <IconButton
                         edge="end"
                         aria-label="add-to-secret"
-                        onClick={() => handleAddKeyAsSecret(id)}
+                        onClick={() => handleAddKeyAsSecret(_id)}
                       >
                         <AddCircleOutlineRoundedIcon />
                       </IconButton>
@@ -182,7 +183,7 @@ const Keys = ({ setSelectedKeyId }) => {
                     <IconButton
                       edge="end"
                       aria-label="delete-key"
-                      onClick={() => handleDeleteKey(id)}
+                      onClick={() => handleDeleteKey(_id)}
                     >
                       <DeleteIcon />
                     </IconButton>

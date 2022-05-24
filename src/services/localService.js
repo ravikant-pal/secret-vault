@@ -1,5 +1,4 @@
 import moment from "moment";
-import axios from "axios";
 
 // auth
 export function addSecret(secret) {
@@ -101,14 +100,6 @@ export function generateValueId() {
   return id;
 }
 
-export function showSecret() {
-  return localStorage.getItem("show-secret");
-}
-
-export function toggleShowSecret(flag) {
-  return localStorage.setItem("show-secret", flag);
-}
-
 //user
 
 export function getUserId() {
@@ -129,13 +120,10 @@ export function setAuthIp(ip) {
   return localStorage.setItem("session-ip", ip);
 }
 
-export async function getCurrentIp() {
-  return await axios.get(`https://api.ipify.org?format=json`);
-}
-
+// Validation
 export function validateEmail(email) {
   return email.match(
-    /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   );
 }
 
@@ -143,4 +131,4 @@ export function validateOtp(otp) {
   return otp && otp.match(/^\d{6}$/);
 }
 
-//api services
+// Utilities

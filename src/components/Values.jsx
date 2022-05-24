@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createStyles, makeStyles } from "@material-ui/core/styles";
 import {
-  Avatar,
   IconButton,
   ListItem,
   ListItemAvatar,
@@ -18,15 +17,20 @@ import DeleteIcon from "@material-ui/icons/Delete";
 import SendIcon from "@material-ui/icons/Send";
 import ConfirmDialog from "./ConfirmDialog";
 import "./values.css";
-import * as service from "../services/service";
+import axios from "axios";
+import moment from "moment";
+import { InputAdornment } from "@mui/material";
+
+import * as Constants from "../constants";
 
 const Values = ({ selectedKeyId, setSelectedKeyId }) => {
   const classes = useStyles();
 
   const [copiedId, setCopiedId] = useState(false);
-  const [selectedId, setSelectedId] = useState(false);
+  const [idTobeDeleted, setIdTobeDeleted] = useState(false);
+  const [key, setKey] = useState({});
   const [open, setOpen] = useState(false);
-  const [values, setValues] = useState(service.getValuesForKey(selectedKeyId));
+  const [values, setValues] = useState([]);
   const [value, setValue] = useState("");
 
   const handelCopyMsg = (val) => {
@@ -38,8 +42,14 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
   };
 
   const deleteValue = () => {
-    service.deleteValue(selectedKeyId, selectedId);
-    setValues(service.getValuesForKey(selectedKeyId));
+    axios
+      .delete(`${Constants.BASE_URL}/values/${key._id}/${idTobeDeleted}`)
+
+      .then((res) => {
+        console.log(res);
+        setValues(values.filter((v) => v._id !== idTobeDeleted));
+      })
+      .catch((err) => console.error(err));
   };
 
   const handleChange = (e) => {
@@ -48,11 +58,29 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
 
   const handleSumbmit = () => {
     if (value) {
-      service.addValue(selectedKeyId, value);
-      setValues(service.getValuesForKey(selectedKeyId));
-      setValue("");
+      axios
+        .post(`${Constants.BASE_URL}/values/new`, {
+          keyId: key._id,
+          value,
+        })
+        .then((res) => {
+          setValues([res.data, ...values]);
+          setValue("");
+        })
+        .catch((err) => console.log(err));
     }
   };
+
+  useEffect(() => {
+    axios
+      .get(`${Constants.BASE_URL}/keys/${selectedKeyId}`)
+      .then((res) => {
+        console.log(res);
+        setKey(res.data);
+        setValues(res.data.values);
+      })
+      .catch((err) => console.log(err));
+  }, [selectedKeyId]);
 
   return (
     <Paper className={classes.paper}>
@@ -70,19 +98,17 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
         </ListItemAvatar>
         <ListItemText
           disableTypography
-          primary={
-            <Typography variant="h6">
-              {service.getKeyById(selectedKeyId).keyName}
-            </Typography>
-          }
+          primary={<Typography variant="h6">{key.name}</Typography>}
         />
       </ListItem>
       <Paper className={classes.messagesBody}>
         {values.map((val) => (
-          <div className={classes.messageRowRight} key={val.id}>
+          <div className={classes.messageRowRight} key={val._id}>
             <div className={classes.messageOrange}>
               <p className={classes.messageContent}>{val.value}</p>
-              <div className={classes.messageTimeStampRight}>{val.lmd}</div>
+              <div className={classes.messageTimeStampRight}>
+                {moment(val.updatedAt).format("LLLL")}
+              </div>
 
               <div className={classes.actionBtns}>
                 <Tooltip title={val.id === copiedId ? "copied!" : "copy"}>
@@ -102,7 +128,7 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
                     component="span"
                     onClick={() => {
                       setOpen(true);
-                      setSelectedId(val.id);
+                      setIdTobeDeleted(val._id);
                     }}
                   >
                     <DeleteIcon />
@@ -123,22 +149,41 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
       </Paper>
       {/* Text Input */}
       <div className={classes.wrapForm}>
-        <TextField
-          id="standard-text"
-          placeholder="Type a value"
-          className="inputRounded"
-          variant="outlined"
-          size="small"
-          value={value}
-          onChange={handleChange}
-          onKeyPress={(e) => {
-            if (e.code === "Enter") {
-              handleSumbmit();
-            }
-          }}
-          fullWidth
-        />
-        <Tooltip title="Send">
+        <Tooltip title="Enter a value">
+          <TextField
+            id="standard-text"
+            placeholder="Type a value"
+            className="inputRounded"
+            variant="outlined"
+            size="small"
+            value={value}
+            onChange={handleChange}
+            onKeyPress={(e) => {
+              if (e.code === "Enter") {
+                handleSumbmit();
+              }
+            }}
+            fullWidth
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title="Add">
+                    <IconButton
+                      size="small"
+                      aria-label="send value"
+                      onClick={handleSumbmit}
+                      variant="text"
+                      color="secondary"
+                    >
+                      <SendIcon />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Tooltip>
+        {/* <Tooltip title="Send">
           <IconButton
             color="secondary"
             aria-label="send value"
@@ -148,7 +193,7 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
           >
             <SendIcon />
           </IconButton>
-        </Tooltip>
+        </Tooltip> */}
       </div>
     </Paper>
   );
