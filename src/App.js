@@ -9,6 +9,7 @@ import * as service from "./services/service";
 import LocalAuth from "./components/LocalAuth";
 import Auth from "./components/Auth";
 import { Backdrop, CircularProgress } from "@mui/material";
+import axios from "axios";
 
 function App() {
   const [secret, setSecret] = useState("");
@@ -25,15 +26,13 @@ function App() {
   };
 
   useEffect(() => {
-    service
-      .getCurrentIp()
+    axios
+      .get(`https://api.ipify.org?format=json`)
       .then((res) => {
         console.log(res.data.ip);
         setIsAuthorizedIp(res.data.ip === service.getAuthIp());
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch((err) => console.error(err));
   }, []);
 
   return (

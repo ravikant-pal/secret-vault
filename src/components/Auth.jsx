@@ -76,25 +76,28 @@ export default function Auth({ setIsAuthorizedIp }) {
     if (service.validateOtp(otp)) {
       setVerifyLoading(true);
 
-      service.getCurrentIp().then((res) => {
-        axios
-          .post(`${Constants.BASE_URL}/users/verify-otp`, {
-            userId: service.getUserId(),
-            otp,
-            ip: res.data.ip,
-          })
-          .then((res) => {
-            setVerifyLoading(false);
-            setIsAuthorizedIp(res.data.ip);
-            service.setAuthIp(res.data.ip);
-          })
-          .catch((err) => {
-            if (err.response.status === 401) {
-              setOtpErr(true);
-            }
-            setVerifyLoading(false);
-          });
-      });
+      axios
+        .get(`https://api.ipify.org?format=json`)
+        .then((res) => {
+          axios
+            .post(`${Constants.BASE_URL}/users/verify-otp`, {
+              userId: service.getUserId(),
+              otp,
+              ip: res.data.ip,
+            })
+            .then((res) => {
+              setVerifyLoading(false);
+              setIsAuthorizedIp(res.data.ip);
+              service.setAuthIp(res.data.ip);
+            })
+            .catch((err) => {
+              if (err.response.status === 401) {
+                setOtpErr(true);
+              }
+              setVerifyLoading(false);
+            });
+        })
+        .catch((err) => console.error(err));
     } else {
       setOtpErr(true);
     }
