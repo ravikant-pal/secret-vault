@@ -180,9 +180,7 @@ const Keys = ({ setSelectedKeyId }) => {
                 </ListItemAvatar>
                 <ListItemText
                   primary={name}
-                  secondary={`Last modified - ${moment(updatedAt).format(
-                    "LLLL"
-                  )}`}
+                  secondary={`${moment(updatedAt).format("LLLL")}`}
                 />
 
                 <ListItemSecondaryAction>
