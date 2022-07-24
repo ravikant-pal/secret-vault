@@ -4,10 +4,12 @@ import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogTitle from "@material-ui/core/DialogTitle";
+import { LoadingButton } from "@mui/lab";
 const ConfirmDialog = (props) => {
   const {
     title,
     children,
+    loading,
     open,
     setOpen,
     onConfirm,
@@ -30,16 +32,17 @@ const ConfirmDialog = (props) => {
         >
           {cancelLable ? cancelLable : "No"}
         </Button>
-        <Button
-          variant="contained"
+        <LoadingButton
           onClick={() => {
-            setOpen(false);
             onConfirm();
           }}
+          loading={loading}
+          variant="contained"
           color="secondary"
+          disabled={loading}
         >
           {submitLable ? submitLable : "Yes"}
-        </Button>
+        </LoadingButton>
       </DialogActions>
     </Dialog>
   );

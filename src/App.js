@@ -29,7 +29,6 @@ function App() {
     axios
       .get(`https://api.ipify.org?format=json`)
       .then((res) => {
-        console.log(res.data.ip);
         setIsAuthorizedIp(res.data.ip === service.getAuthIp());
       })
       .catch((err) => console.error(err));

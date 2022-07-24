@@ -17,6 +17,8 @@ import AddIcon from "@material-ui/icons/Add";
 import axios from "axios";
 import moment from "moment";
 import {
+  Chip,
+  CircularProgress,
   Divider,
   IconButton,
   ListItemSecondaryAction,
@@ -54,14 +56,20 @@ const Keys = ({ setSelectedKeyId }) => {
   const [open, setOpen] = useState(false);
   const [keys, setKeys] = useState([]);
   const [key, setKey] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [keyLoading, setKeyLoading] = useState(false);
+  const [secretActionId, setSecretActionId] = useState("");
+  const [deleteActionId, setDeleteActionId] = useState("");
   const [errMsg, setErrMsg] = useState("");
   const saveKey = () => {
+    setLoading(true);
     axios
       .post(`${Constants.BASE_URL}/keys/new`, {
         userId: service.getUserId(),
         name: key,
       })
       .then((res) => {
+        setLoading(false);
         setOpen(false);
         setKey("");
         setKeys([res.data, ...keys]);
@@ -73,20 +81,23 @@ const Keys = ({ setSelectedKeyId }) => {
     setErrMsg("");
   };
   const handleDeleteKey = (id) => {
+    setDeleteActionId(id);
     axios
       .delete(`${Constants.BASE_URL}/keys/${service.getUserId()}/${id}`)
 
       .then((res) => {
-        console.log(res);
+        setDeleteActionId("");
         setKeys(keys.filter((k) => k._id !== id));
       })
       .catch((err) => console.error(err));
   };
 
   const handleAddKeyAsSecret = (id) => {
+    setSecretActionId(id);
     axios
       .patch(`${Constants.BASE_URL}/keys/make-secret/${id}`)
       .then((res) => {
+        setSecretActionId("");
         setKeys(
           keys.map((k) => {
             if (k._id === id) {
@@ -100,10 +111,11 @@ const Keys = ({ setSelectedKeyId }) => {
   };
 
   useEffect(() => {
+    setKeyLoading(true);
     axios
       .get(`${Constants.BASE_URL}/keys/all/${service.getUserId()}`)
       .then((res) => {
-        console.log(res);
+        setKeyLoading(false);
         setKeys(res.data.keys);
       })
       .catch((err) => console.log(err));
@@ -118,8 +130,14 @@ const Keys = ({ setSelectedKeyId }) => {
         >
           <ListItemText
             disableTypography
-            primary={<Typography variant="h6">Keys</Typography>}
+            primary={<Typography variant="h6">Keys </Typography>}
           />
+
+          {!keyLoading ? (
+            <Chip label={keys.length} />
+          ) : (
+            <CircularProgress color="inherit" size="1.5rem" />
+          )}
 
           {show && (
             <ListItemSecondaryAction>
@@ -175,17 +193,26 @@ const Keys = ({ setSelectedKeyId }) => {
                         aria-label="add-to-secret"
                         onClick={() => handleAddKeyAsSecret(_id)}
                       >
-                        <AddCircleOutlineRoundedIcon />
+                        {secretActionId === _id ? (
+                          <CircularProgress color="inherit" size="1rem" />
+                        ) : (
+                          <AddCircleOutlineRoundedIcon />
+                        )}
                       </IconButton>
                     </Tooltip>
                   )}
                   <Tooltip title="Delete" placement="top" arrow>
                     <IconButton
                       edge="end"
+                      color="secondary"
                       aria-label="delete-key"
                       onClick={() => handleDeleteKey(_id)}
                     >
-                      <DeleteIcon />
+                      {deleteActionId === _id ? (
+                        <CircularProgress color="secondary" size="1rem" />
+                      ) : (
+                        <DeleteIcon />
+                      )}
                     </IconButton>
                   </Tooltip>
                 </ListItemSecondaryAction>
@@ -196,7 +223,7 @@ const Keys = ({ setSelectedKeyId }) => {
       </List>
       <Tooltip title="Add a new key">
         <Fab
-          color="secondary"
+          color="primary"
           variant="extended"
           size="medium"
           aria-label="add new key"
@@ -211,6 +238,7 @@ const Keys = ({ setSelectedKeyId }) => {
       <ConfirmDialog
         title="Add a new key"
         open={open}
+        loading={loading}
         setOpen={setOpen}
         onConfirm={saveKey}
         cancelLable={"Cancel"}

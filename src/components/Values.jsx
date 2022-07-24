@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createStyles, makeStyles } from "@material-ui/core/styles";
 import {
+  CircularProgress,
   IconButton,
   ListItem,
   ListItemAvatar,
@@ -15,7 +16,6 @@ import ArrowBackRoundedIcon from "@material-ui/icons/ArrowBackRounded";
 import FileCopyOutlinedIcon from "@material-ui/icons/FileCopyOutlined";
 import DeleteIcon from "@material-ui/icons/Delete";
 import SendIcon from "@material-ui/icons/Send";
-import ConfirmDialog from "./ConfirmDialog";
 import "./values.css";
 import axios from "axios";
 import moment from "moment";
@@ -27,9 +27,11 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
   const classes = useStyles();
 
   const [copiedId, setCopiedId] = useState(false);
-  const [idTobeDeleted, setIdTobeDeleted] = useState(false);
+  // const [idTobeDeleted, setIdTobeDeleted] = useState(false);
   const [key, setKey] = useState({});
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false);
+  const [sendLoading, setSendLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [values, setValues] = useState([]);
   const [value, setValue] = useState("");
 
@@ -41,12 +43,13 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
     }, 2000);
   };
 
-  const deleteValue = () => {
+  const deleteValue = (idTobeDeleted) => {
+    setDeleteLoading(true);
     axios
       .delete(`${Constants.BASE_URL}/values/${key._id}/${idTobeDeleted}`)
 
       .then((res) => {
-        console.log(res);
+        setDeleteLoading(false);
         setValues(values.filter((v) => v._id !== idTobeDeleted));
       })
       .catch((err) => console.error(err));
@@ -57,6 +60,7 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
   };
 
   const handleSumbmit = () => {
+    setSendLoading(true);
     if (value) {
       axios
         .post(`${Constants.BASE_URL}/values/new`, {
@@ -64,6 +68,7 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
           value,
         })
         .then((res) => {
+          setSendLoading(false);
           setValues([res.data, ...values]);
           setValue("");
         })
@@ -75,7 +80,6 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
     axios
       .get(`${Constants.BASE_URL}/keys/${selectedKeyId}`)
       .then((res) => {
-        console.log(res);
         setKey(res.data);
         setValues(res.data.values);
       })
@@ -98,7 +102,15 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
         </ListItemAvatar>
         <ListItemText
           disableTypography
-          primary={<Typography variant="h6">{key.name}</Typography>}
+          primary={
+            <Typography variant="h6">
+              {Object.keys(key).length !== 0 ? (
+                key.name
+              ) : (
+                <CircularProgress color="inherit" size="1rem" />
+              )}
+            </Typography>
+          }
         />
       </ListItem>
       <Paper className={classes.messagesBody}>
@@ -123,29 +135,31 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
                 </Tooltip>
                 <Tooltip title="Delete">
                   <IconButton
-                    color="default"
+                    color="secondary"
                     aria-label="delete-value"
                     component="span"
-                    onClick={() => {
-                      setOpen(true);
-                      setIdTobeDeleted(val._id);
-                    }}
+                    onClick={() => deleteValue(val._id)}
+                    disabled={deleteLoading}
                   >
-                    <DeleteIcon />
+                    {deleteLoading ? (
+                      <CircularProgress color="secondary" size="1rem" />
+                    ) : (
+                      <DeleteIcon />
+                    )}
                   </IconButton>
                 </Tooltip>
               </div>
             </div>
           </div>
         ))}
-        <ConfirmDialog
+        {/* <ConfirmDialog
           title="Delete Value ?"
           open={open}
           setOpen={setOpen}
           onConfirm={deleteValue}
         >
           Are you sure you want to delete this value?
-        </ConfirmDialog>
+        </ConfirmDialog> */}
       </Paper>
       {/* Text Input */}
       <div className={classes.wrapForm}>
@@ -167,7 +181,7 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <Tooltip title="Add">
+                  <Tooltip title="Send">
                     <IconButton
                       size="small"
                       aria-label="send value"
@@ -175,7 +189,11 @@ const Values = ({ selectedKeyId, setSelectedKeyId }) => {
                       variant="text"
                       color="secondary"
                     >
-                      <SendIcon />
+                      {sendLoading ? (
+                        <CircularProgress color="secondary" size="1rem" />
+                      ) : (
+                        <SendIcon />
+                      )}
                     </IconButton>
                   </Tooltip>
                 </InputAdornment>
