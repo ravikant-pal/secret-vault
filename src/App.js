@@ -1,87 +1,31 @@
-import React, { useState, useEffect } from "react";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import Typography from "@material-ui/core/Typography";
-import Grid from "@material-ui/core/Grid";
-import { AppBar, Toolbar, Avatar } from "@material-ui/core";
-import Keys from "./components/Keys";
-import Values from "./components/Values";
-import * as service from "./services/service";
-import LocalAuth from "./components/LocalAuth";
-import Auth from "./components/Auth";
-import { Backdrop, CircularProgress } from "@mui/material";
-import axios from "axios";
+import React from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+
+import NotFound from "./components/pages/NotFound";
+import { CssBaseline } from "@mui/material";
+import Unauthorized from "./components/layout/Unauthorized";
+import Keys from "./components/pages/Keys";
+import Values from "./components/pages/Values";
+import Auth from "./components/pages/Auth";
 
 function App() {
-  const [secret, setSecret] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
-  const [isAuthorizedIp, setIsAuthorizedIp] = useState(null);
-  const [selectedKeyId, setSelectedKeyId] = useState(false);
-  const addSecret = () => {
-    if (service.getSecret() == null) {
-      service.addSecret(secret);
-      setAuthenticated(true);
-    } else if (service.getSecret() === secret) {
-      setAuthenticated(true);
-    }
-  };
-
-  useEffect(() => {
-    axios
-      .get(`https://api.ipify.org?format=json`)
-      .then((res) => {
-        setIsAuthorizedIp(res.data.ip === service.getAuthIp());
-      })
-      .catch((err) => console.error(err));
-  }, []);
-
   return (
     <>
-      {isAuthorizedIp === null ? (
-        <Backdrop
-          open
-          sx={
-            ({ color: (theme) => theme.palette.secondary },
-            { zIndex: (theme) => theme.zIndex.drawer + 1 })
-          }
-        >
-          <CircularProgress color="secondary" />
-        </Backdrop>
-      ) : isAuthorizedIp === false ? (
-        <Auth setIsAuthorizedIp={setIsAuthorizedIp} />
-      ) : authenticated ? (
-        <Grid
-          container
-          direction="row"
-          justifyContent="center"
-          alignItems="center"
-        >
-          <Grid item xs={12} sm={4}>
-            <AppBar position="static">
-              <Toolbar variant="regular">
-                <Avatar src="fevicon.png" />
-                <Typography variant="h5" color="inherit">
-                  Secret Vault
-                </Typography>
-              </Toolbar>
-            </AppBar>
-            <CssBaseline />
-            {selectedKeyId ? (
-              <Values
-                selectedKeyId={selectedKeyId}
-                setSelectedKeyId={setSelectedKeyId}
-              />
-            ) : (
-              <Keys setSelectedKeyId={setSelectedKeyId} />
-            )}
-          </Grid>
-        </Grid>
-      ) : (
-        <LocalAuth
-          secret={secret}
-          setSecret={setSecret}
-          addSecret={addSecret}
-        />
-      )}
+      <CssBaseline />
+      <Routes>
+        {/* public routes */}
+        <Route path="/" element={<Navigate to="/auth" />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="unauthorized" element={<Unauthorized />} />
+        {/* Home page */}
+
+        {/* we want to protect these routes */}
+        <Route path="/keys" element={<Keys />} />
+        <Route path="/values" element={<Values />} />
+
+        {/* catch all */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </>
   );
 }
